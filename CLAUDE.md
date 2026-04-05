@@ -7,30 +7,78 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 ## Project Overview
 
 **Repository:** `wenlongkevin-cloud/vokks`
-**Status:** Initial setup — no source code has been committed yet.
+**Owner:** Marlong
+**Status:** Active development — quantitative trading research framework.
 
-This repository was initialized on `2026-04-05`. The codebase, tech stack, and architecture are to be determined as the project evolves. Update this file as the project takes shape.
-
----
-
-## Repository State
-
-- No source files exist yet
-- No package manager, framework, or build tool has been chosen
-- No CI/CD pipeline is configured
-- No tests exist yet
+Vokks is Marlong's personal A-share quantitative research project. It is oriented toward trend-following trading, and is used for stock research, strategy backtesting, and risk rule iteration.
 
 ---
 
-## Development Branch
+## Tech Stack
 
-Active development happens on feature branches. The current documentation branch is:
+- **Language:** Python 3.11+
+- **Data source:** akshare (A-share daily OHLCV, front-adjusted)
+- **Core libraries:** pandas, numpy, matplotlib, ta, jupyterlab
+- **Package manager:** pip / requirements.txt
+
+---
+
+## Directory Structure
 
 ```
-claude/add-claude-documentation-j739c
+vokks/
+├── main.py                     # Entry point: run trend strategy backtest
+├── requirements.txt
+├── README.md
+│
+├── config/
+│   └── settings.py             # Global config (symbol, dates, capital, risk params)
+│
+├── data/
+│   ├── fetcher.py              # akshare fetch wrapper (daily, front-adjusted)
+│   ├── loader.py               # Local CSV cache read/write
+│   └── cache/                  # Auto-created CSV cache directory
+│
+├── indicators/
+│   ├── ma.py                   # MA5/20/60/250
+│   ├── macd.py                 # MACD / DIFF / DEA / cross signals
+│   ├── volume.py               # OBV, volume ratio, amount MA
+│   └── sar.py                  # Parabolic SAR
+│
+├── strategy/
+│   ├── base.py                 # Abstract strategy base class
+│   └── trend_ma.py             # MA golden cross + MACD + SAR filter
+│
+├── backtest/
+│   ├── engine.py               # Day-by-day backtest engine (commission/tax/slippage)
+│   └── metrics.py              # Sharpe, max drawdown, win rate, profit factor
+│
+├── risk/
+│   ├── position.py             # Position sizing (fixed_pct / atr_based)
+│   └── rules.py                # Stop-loss, take-profit, trailing stop
+│
+├── utils/
+│   ├── logger.py               # Unified logging
+│   └── helpers.py              # pct(), round2()
+│
+└── examples/notebooks/
+    └── demo_trend_strategy.ipynb
 ```
 
-Follow the branching convention: `<author>/<short-description>-<id>`
+---
+
+## Development Workflow
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run default backtest (300274, 2023–2026, 100k capital)
+python main.py
+
+# Open Jupyter notebook demo
+jupyter lab examples/notebooks/demo_trend_strategy.ipynb
+```
 
 ---
 
@@ -41,6 +89,16 @@ Follow the branching convention: `<author>/<short-description>-<id>`
 - **Never force-push** to `main` or `master`
 - **Never skip hooks** (`--no-verify`) without explicit user approval
 - Prefer small, focused commits over large monolithic ones
+
+---
+
+## Development Branch
+
+Active development branch:
+
+```
+claude/add-claude-documentation-j739c
+```
 
 ---
 
@@ -55,12 +113,13 @@ Follow the branching convention: `<author>/<short-description>-<id>`
 - Do not refactor or "improve" code beyond what was requested
 - Prefer editing existing files over creating new ones
 
-### Codebase Changes
+### Codebase Conventions
 
-- Match the style and conventions already present in each file
-- Keep changes minimal and targeted
-- Do not introduce speculative abstractions or future-proofing
-- Do not add backwards-compatibility shims for removed code
+- All indicator functions take a `pd.DataFrame` and return it with new columns added in-place
+- Signal convention: `+1` = buy, `-1` = sell, `0` = hold
+- All config is passed as a plain `dict` — no global state
+- Logger: always use `get_logger(__name__)` from `utils.logger`
+- Data columns: `date / open / high / low / close / volume / amount / turnover`
 
 ### Security
 
@@ -71,59 +130,40 @@ Follow the branching convention: `<author>/<short-description>-<id>`
 ### Commits & Pushes
 
 - Only commit when explicitly asked by the user
-- Push to the designated development branch (see above), never to `main`/`master` without permission
+- Push to the designated development branch, never to `main`/`master` without permission
 - Always use `git push -u origin <branch>`
 
 ---
 
-## Updating This File
+## Key Config Parameters (`config/settings.py`)
 
-When the project evolves (stack chosen, structure established, workflows defined), update the relevant sections:
-
-1. **Project Overview** — describe what the project does
-2. **Tech Stack** — languages, frameworks, package managers, build tools
-3. **Directory Structure** — key directories and their purpose
-4. **Development Workflow** — how to install dependencies, run dev server, run tests, build
-5. **Environment Variables** — required `.env` keys (never commit actual values)
-6. **Testing** — test framework, how to run tests, coverage requirements
-7. **CI/CD** — pipelines, deployment targets
+| Key | Default | Description |
+|-----|---------|-------------|
+| `symbol` | `"300274"` | A-share code |
+| `start_date` | `"20230101"` | Backtest start |
+| `end_date` | `"20260101"` | Backtest end |
+| `initial_capital` | `100_000` | Starting capital (RMB) |
+| `commission_rate` | `0.0003` | One-way commission |
+| `stamp_duty` | `0.001` | Sell-side tax |
+| `stop_loss_pct` | `0.07` | Hard stop loss |
+| `take_profit_pct` | `0.20` | Take profit |
+| `trailing_stop_pct` | `0.05` | Trailing stop from peak |
+| `position_mode` | `"fixed_pct"` | `fixed_pct` or `atr_based` |
 
 ---
 
-## Template Sections (fill in as project grows)
+## Environment Variables
 
-### Tech Stack
+No external API keys required currently. akshare is free and needs no authentication.
 
-> _To be determined._
+---
 
-### Directory Structure
+## Testing
 
-> _To be determined._
+> No test suite yet. When added, use pytest. Place tests in `tests/`.
 
-### Development Workflow
+---
 
-```bash
-# Install dependencies
-# <command here>
+## CI/CD
 
-# Start dev server
-# <command here>
-
-# Run tests
-# <command here>
-
-# Build for production
-# <command here>
-```
-
-### Environment Variables
-
-> _Document required environment variables here. Never commit actual values._
-
-### Testing
-
-> _Describe the test framework and how to run tests._
-
-### CI/CD
-
-> _Describe the CI/CD pipeline and deployment process._
+> Not configured yet.
